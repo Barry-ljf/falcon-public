@@ -1,6 +1,8 @@
 
 #include "connect.h" 
 #include "secondary.h"
+#include<iostream>
+using namespace std;
 
 extern CommunicationObject commObject;
 extern int partyNum;
@@ -70,7 +72,8 @@ void train(NeuralNetwork* net)
 		readMiniBatch(net, "TRAINING");
 		net->forward();
 		net->backward();
-		// cout << "----------------------------------" << endl;  
+		net->computeDelta();
+		 cout << "training finished----------------------------------" << endl;  
 	}
 }
 
@@ -91,10 +94,10 @@ void test(bool PRELOADING, string network, NeuralNetwork* net)
 			readMiniBatch(net, "TESTING");
 
 		net->forward();
-		// net->predict(maxIndex);
+		net->predict(maxIndex);
 		// net->getAccuracy(maxIndex, counter);
 	}
-	print_vector((*(net->layers[NUM_LAYERS-1])->getActivation()), "FLOAT", "MPC Output over uint32_t:", 1280);
+	//print_vector((*(net->layers[NUM_LAYERS-1])->getActivation()), "FLOAT", "MPC Output over uint32_t:", 1280);
 
 	// Write output to file
 	if (PRELOADING)
@@ -103,7 +106,7 @@ void test(bool PRELOADING, string network, NeuralNetwork* net)
 		data_file.open("files/preload/"+which_network(network)+"/"+which_network(network)+".txt");
 		
 		vector<myType> b(MINI_BATCH_SIZE * LAST_LAYER_SIZE);
-		funcReconstruct((*(net->layers[NUM_LAYERS-1])->getActivation()), b, MINI_BATCH_SIZE * LAST_LAYER_SIZE, "anything", false);
+		funcReconstruct((*(net->layers[NUM_LAYERS-1])->getActivation()), b, MINI_BATCH_SIZE * LAST_LAYER_SIZE, "anything", true);
 		for (int i = 0; i < MINI_BATCH_SIZE; ++i)
 		{
 			for (int j = 0; j < LAST_LAYER_SIZE; ++j)
@@ -828,10 +831,9 @@ void loadData(string net, string dataset)
 	string filename_test_data_next, filename_test_data_prev;
 	string filename_train_labels_next, filename_train_labels_prev;
 	string filename_test_labels_next, filename_test_labels_prev;
-
-	//Some day check if this is right. It seems that all 
-	//parties use the same data which is not right. 
-	if (partyNum < 3)
+	
+	// modified to let each party holding a share of data
+	if (partyNum == PARTY_A)
 	{
 		filename_train_data_next = "files/train_data_A";
 		filename_train_data_prev = "files/train_data_B";
@@ -841,7 +843,34 @@ void loadData(string net, string dataset)
 		filename_train_labels_prev = "files/train_labels_B";
 		filename_test_labels_next = "files/test_labels_A";
 		filename_test_labels_prev = "files/test_labels_B";
+		//sleep(1000);
 	}
+
+	if (partyNum == PARTY_B)
+	{
+		filename_train_data_next = "files/train_data_B";
+		filename_train_data_prev = "files/train_data_C";
+		filename_test_data_next = "files/test_data_B";
+		filename_test_data_prev = "files/test_data_C";
+		filename_train_labels_next = "files/train_labels_B";
+		filename_train_labels_prev = "files/train_labels_C";
+		filename_test_labels_next = "files/test_labels_B";
+		filename_test_labels_prev = "files/test_labels_C";
+		//sleep(1000);
+	}
+
+	if (partyNum == PARTY_C)
+	{
+		filename_train_data_next = "files/train_data_C";
+		filename_train_data_prev = "files/train_data_A";
+		filename_test_data_next = "files/test_data_C";
+		filename_test_data_prev = "files/test_data_A";
+		filename_train_labels_next = "files/train_labels_C";
+		filename_train_labels_prev = "files/train_labels_A";
+		filename_test_labels_next = "files/test_labels_C";
+		filename_test_labels_prev = "files/test_labels_A";
+		//sleep(1000);
+	}	
 
 	float temp_next = 0, temp_prev = 0;
 	ifstream f_next(filename_train_data_next);
@@ -864,7 +893,7 @@ void loadData(string net, string dataset)
 
 	ifstream h_next(filename_test_data_next);
 	ifstream h_prev(filename_test_data_prev);
-	for (int i = 0; i < TRAINING_DATA_SIZE * INPUT_SIZE; ++i)
+	for (int i = 0; i < TEST_DATA_SIZE * INPUT_SIZE; ++i)
 	{
 		h_next >> temp_next; h_prev >> temp_prev;
 		testData.push_back(std::make_pair(floatToMyType(temp_next), floatToMyType(temp_prev)));
@@ -873,7 +902,7 @@ void loadData(string net, string dataset)
 
 	ifstream k_next(filename_test_labels_next);
 	ifstream k_prev(filename_test_labels_prev);
-	for (int i = 0; i < TRAINING_DATA_SIZE * LAST_LAYER_SIZE; ++i)
+	for (int i = 0; i < TEST_DATA_SIZE * LAST_LAYER_SIZE; ++i)
 	{
 		k_next >> temp_next; k_prev >> temp_prev;
 		testLabels.push_back(std::make_pair(floatToMyType(temp_next), floatToMyType(temp_prev)));
@@ -888,6 +917,22 @@ void readMiniBatch(NeuralNetwork* net, string phase)
 {
 	size_t s = trainData.size();
 	size_t t = trainLabels.size();
+	// cout << "trainLabels.size():"<<trainLabels.size() << endl;  
+	// cout << "trainData.size():"<<trainData.size() << endl;  
+//以下函数是为了让训练的明文输出：
+		// ofstream data_file;
+		// data_file.open("files/outputdata.txt");
+
+		// vector<myType> b( TRAINING_DATA_SIZE * INPUT_SIZE);
+		// funcReconstruct(trainData, b, TRAINING_DATA_SIZE * INPUT_SIZE, "anything", true);	//只有这一行可以在command命令行输出
+		// for (int i = 0; i < TRAINING_DATA_SIZE; ++i)
+		// {
+		// for (int j = 0; j < INPUT_SIZE; ++j)
+		// data_file << b[i*(INPUT_SIZE) + j] << " ";
+		// data_file << endl;
+		// }
+		
+
 
 	if (phase == "TRAINING")
 	{

@@ -14,7 +14,7 @@
 #define _aligned_malloc(size,alignment) aligned_alloc(alignment,size)
 #define _aligned_free free
 #define getrandom(min, max) ((rand()%(int)(((max) + 1)-(min)))+ (min))
-#define floatToMyType(a) ((myType)(a * (1 << FLOAT_PRECISION)))
+#define floatToMyType(a) ((myType)(int)floor(a * (1 << FLOAT_PRECISION)))
 
 
 /********************* AES and other globals *********************/
@@ -46,7 +46,7 @@
 #define LOG_LEARNING_RATE 5
 #define LEARNING_RATE (1 << (FLOAT_PRECISION - LOG_LEARNING_RATE))
 #define NO_OF_EPOCHS 1.5
-#define NUM_ITERATIONS 1
+#define NUM_ITERATIONS  1
 // #define NUM_ITERATIONS ((int) (NO_OF_EPOCHS * TRAINING_DATA_SIZE/MINI_BATCH_SIZE))
 
 

@@ -34,11 +34,13 @@ void initCommunication(string addr, int port, int player, int mode)
 	{
 		communicationSenders[player] = new BmrNet(temp, port);
 		communicationSenders[player]->connectNow();
+		cout<<"player:"<<player<<"is connecting"<<"host:post : "<<temp<<" "<<port;
 	}
 	else
 	{
 		communicationReceivers[player] = new BmrNet(port);
 		communicationReceivers[player]->listenNow();
+		cout<<"player:"<<player<<"is listenning"<<"host:post : 127.0.0.1 for"<<partyNum<<"： "<<port;;
 	}
 }
 
@@ -71,17 +73,23 @@ void initializeCommunicationSerial(int* ports)//Use this for many parties
 	communicationReceivers = new BmrNet*[NUM_OF_PARTIES];
 	for (int i = 0; i < NUM_OF_PARTIES; i++)
 	{
+		cout<<"partNum="<<partyNum<<"\n";
 		if (i<partyNum)
 		{
 		  initCommunication( addrs[i], ports[i * 2 + 1], i, 0);
 		  initCommunication("127.0.0.1", ports[i * 2], i, 1);
+		  cout<<"connect|client="<<addrs[i]<<" "<<ports[i * 2 + 1];
+		  cout<<"listen|server=127.0.0.1"<<" "<<ports[i * 2 ];
 		}
 		else if (i>partyNum)
 		{
 		  initCommunication("127.0.0.1", ports[i * 2], i, 1);
 		  initCommunication( addrs[i], ports[i * 2 + 1], i, 0);
+		 cout<<"connect|client="<<addrs[i]<<" "<<ports[i * 2 + 1];
+		  cout<<"listen|server=127.0.0.1"<<" "<<ports[i * 2];
 		}
 	}
+	cout<<"partnum="<<partyNum<<"\n";
 }
 
 void initializeCommunication(char* filename, int p)
