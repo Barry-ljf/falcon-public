@@ -858,7 +858,6 @@ void loadData(string net, string dataset)
 		filename_test_labels_prev = "files/test_labels_C";
 		//sleep(1000);
 	}
-
 	if (partyNum == PARTY_C)
 	{
 		filename_train_data_next = "files/train_data_C";
@@ -869,7 +868,6 @@ void loadData(string net, string dataset)
 		filename_train_labels_prev = "files/train_labels_A";
 		filename_test_labels_next = "files/test_labels_C";
 		filename_test_labels_prev = "files/test_labels_A";
-		//sleep(1000);
 	}	
 
 	float temp_next = 0, temp_prev = 0;
