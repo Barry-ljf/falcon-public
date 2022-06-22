@@ -65,7 +65,8 @@ void NeuralNetwork::forward()
 	
 	// cout << "----------------------------------------------" << endl;
 	// cout << "DEBUG: forward() at NeuralNetwork.cpp" << endl;
-	// print_vector(inputData, "FLOAT", "inputData:", 784);
+	//print_vector(inputData, "FLOAT", "inputData:", 784);
+	//print_vector(outputData, "FLOAT", "outputData:", 784);
 	// print_vector(*((CNNLayer*)layers[0])->getWeights(), "FLOAT", "w0:", 20);
 	// print_vector((*layers[0]->getActivation()), "FLOAT", "a0:", 1000);
 
@@ -190,12 +191,12 @@ void NeuralNetwork::getAccuracy(const RSSVectorMyType &maxIndex, vector<size_t> 
 	vector<smallType> prediction(rows*columns);
 	
 	// reconstruct ground truth from output data
-	funcReconstruct(outputData, groundTruth, rows*columns, "groundTruth", false);
-	// print_vector(outputData, "FLOAT", "outputData:", rows*columns);
+	funcReconstruct(outputData, groundTruth, rows*columns, "groundTruth", true);//secondary.cpp :599 shows why output is all 0s when test --ljf
+	print_vector(outputData, "FLOAT", "outputData:", rows*columns);
 	
 	// reconstruct prediction from neural network
 	funcMaxpool((*(layers[NUM_LAYERS-1])->getActivation()), temp_max, temp_maxPrime, rows, columns);
-	funcReconstructBit(temp_maxPrime, prediction, rows*columns, "prediction", false);
+	funcReconstructBit(temp_maxPrime, prediction, rows*columns, "prediction", true);
 	
 	for (int i = 0, index = 0; i < rows; ++i){
 		counter[1]++;

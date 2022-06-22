@@ -1,8 +1,6 @@
 
 #include "connect.h" 
 #include "secondary.h"
-#include<iostream>
-using namespace std;
 
 extern CommunicationObject commObject;
 extern int partyNum;
@@ -64,6 +62,9 @@ void parseInputs(int argc, char* argv[])
 void train(NeuralNetwork* net)
 {
 	log_print("train");
+	vector<size_t> counter(2,0);
+	RSSVectorMyType maxIndex(MINI_BATCH_SIZE);
+	
 
 	for (int i = 0; i < NUM_ITERATIONS; ++i)
 	{
@@ -72,8 +73,8 @@ void train(NeuralNetwork* net)
 		readMiniBatch(net, "TRAINING");
 		net->forward();
 		net->backward();
-		net->computeDelta();
-		 cout << "training finished----------------------------------" << endl;  
+		net->getAccuracy(maxIndex, counter);
+		// cout << "----------------------------------" << endl;  
 	}
 }
 
@@ -94,8 +95,8 @@ void test(bool PRELOADING, string network, NeuralNetwork* net)
 			readMiniBatch(net, "TESTING");
 
 		net->forward();
-		net->predict(maxIndex);
-		// net->getAccuracy(maxIndex, counter);
+		// net->predict(maxIndex);
+		net->getAccuracy(maxIndex, counter);
 	}
 	//print_vector((*(net->layers[NUM_LAYERS-1])->getActivation()), "FLOAT", "MPC Output over uint32_t:", 1280);
 
@@ -106,7 +107,7 @@ void test(bool PRELOADING, string network, NeuralNetwork* net)
 		data_file.open("files/preload/"+which_network(network)+"/"+which_network(network)+".txt");
 		
 		vector<myType> b(MINI_BATCH_SIZE * LAST_LAYER_SIZE);
-		funcReconstruct((*(net->layers[NUM_LAYERS-1])->getActivation()), b, MINI_BATCH_SIZE * LAST_LAYER_SIZE, "anything", true);
+		funcReconstruct((*(net->layers[NUM_LAYERS-1])->getActivation()), b, MINI_BATCH_SIZE * LAST_LAYER_SIZE, "anything", false);
 		for (int i = 0; i < MINI_BATCH_SIZE; ++i)
 		{
 			for (int j = 0; j < LAST_LAYER_SIZE; ++j)
@@ -610,6 +611,27 @@ void preload_network(bool PRELOADING, string network, NeuralNetwork* net)
 
 		// print_vector(net->inputData, "FLOAT", "inputData:", 784);
 
+		/************************** labels for test --ljf**********************************/
+		string path_labels_1 = default_path+"train_labels_"+to_string(partyNum);
+		string path_labels_2 = default_path+"train_labels_"+to_string(nextParty(partyNum));
+		ifstream f_labels_1(path_labels_1), f_labels_2(path_labels_2);
+
+		for (int i = 0; i < LAST_LAYER_SIZE * MINI_BATCH_SIZE; ++i)
+		{
+			f_labels_1 >> temp_next; f_labels_2 >> temp_prev;
+			net->outputData[i] = std::make_pair(floatToMyType(temp_next), floatToMyType(temp_prev));
+		}
+		f_labels_1.close(); f_labels_2.close();
+		if (ZEROS)
+		{
+			generate_zeros("train_labels_1", 10*128, temp);
+			generate_zeros("train_labels_2", 10*128, temp);
+		}
+
+		print_vector(net->outputData, "FLOAT", "outputData1:", 1280);
+
+
+
 		/************************** Weight1 **********************************/
 		string path_weight1_1 = default_path+"weight1_"+to_string(partyNum);
 		string path_weight1_2 = default_path+"weight1_"+to_string(nextParty(partyNum));
@@ -722,7 +744,7 @@ void preload_network(bool PRELOADING, string network, NeuralNetwork* net)
 		{
 			generate_zeros("bias2_1", 50, temp);
 			generate_zeros("bias2_2", 50, temp);
-		}
+		} 
 
 		/************************** Bias3 **********************************/
 		string path_bias3_1 = default_path+"bias3_"+to_string(partyNum);
@@ -843,7 +865,6 @@ void loadData(string net, string dataset)
 		filename_train_labels_prev = "files/train_labels_B";
 		filename_test_labels_next = "files/test_labels_A";
 		filename_test_labels_prev = "files/test_labels_B";
-		//sleep(1000);
 	}
 
 	if (partyNum == PARTY_B)
@@ -856,8 +877,8 @@ void loadData(string net, string dataset)
 		filename_train_labels_prev = "files/train_labels_C";
 		filename_test_labels_next = "files/test_labels_B";
 		filename_test_labels_prev = "files/test_labels_C";
-		//sleep(1000);
 	}
+
 	if (partyNum == PARTY_C)
 	{
 		filename_train_data_next = "files/train_data_C";
@@ -915,22 +936,6 @@ void readMiniBatch(NeuralNetwork* net, string phase)
 {
 	size_t s = trainData.size();
 	size_t t = trainLabels.size();
-	// cout << "trainLabels.size():"<<trainLabels.size() << endl;  
-	// cout << "trainData.size():"<<trainData.size() << endl;  
-//以下函数是为了让训练的明文输出：
-		// ofstream data_file;
-		// data_file.open("files/outputdata.txt");
-
-		// vector<myType> b( TRAINING_DATA_SIZE * INPUT_SIZE);
-		// funcReconstruct(trainData, b, TRAINING_DATA_SIZE * INPUT_SIZE, "anything", true);	//只有这一行可以在command命令行输出
-		// for (int i = 0; i < TRAINING_DATA_SIZE; ++i)
-		// {
-		// for (int j = 0; j < INPUT_SIZE; ++j)
-		// data_file << b[i*(INPUT_SIZE) + j] << " ";
-		// data_file << endl;
-		// }
-		
-
 
 	if (phase == "TRAINING")
 	{
