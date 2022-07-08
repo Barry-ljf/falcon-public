@@ -1,6 +1,6 @@
 
 #pragma once
-#include "BNConfig.h"
+#include "AdaptAvgpoolLayerConfig.h"
 #include "Layer.h"
 #include "tools.h"
 #include "connect.h"
@@ -8,21 +8,17 @@
 using namespace std;
 
 
-class BNLayer : public Layer
+class AdaptAvgpoolLayer : public Layer
 {
 private:
-	BNConfig conf;
+	AdaptAvgpoolLayerConfig conf;
 	RSSVectorMyType activations;
 	RSSVectorMyType deltas;
-	RSSVectorMyType gamma;
-	RSSVectorMyType beta;
-	RSSVectorMyType xhat;
-	RSSVectorMyType sigma;
+	RSSVectorSmallType maxPrime;
 
 public:
 	//Constructor and initializer
-	BNLayer(BNConfig* conf, int _layerNum);
-	void initialize();
+	AdaptAvgpoolLayer(AdaptAvgpoolLayerConfig* conf, int _layerNum);
 
 	//Functions
 	void printLayer() override;
@@ -33,6 +29,4 @@ public:
 	//Getters
 	RSSVectorMyType* getActivation() {return &activations;};
 	RSSVectorMyType* getDelta() {return &deltas;};
-	RSSVectorMyType* getBias() {return &beta;};
-	RSSVectorMyType* getWeights() {return &gamma;};
 };

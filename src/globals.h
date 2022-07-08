@@ -36,14 +36,14 @@
 #define USING_EIGEN false
 #define PRIME_NUMBER 67
 #define FLOAT_PRECISION 13
-#define PRECISE_DIVISION false
+#define PRECISE_DIVISION true
 
 
 /********************* Neural Network globals *********************/
 //Batch size has to be a power of two
 #define LOG_MINI_BATCH 7
 #define MINI_BATCH_SIZE (1 << LOG_MINI_BATCH)
-#define LOG_LEARNING_RATE 5
+#define LOG_LEARNING_RATE 12
 #define LEARNING_RATE (1 << (FLOAT_PRECISION - LOG_LEARNING_RATE))
 #define NO_OF_EPOCHS 1.5
 #define NUM_ITERATIONS 1
@@ -52,7 +52,7 @@
 
 
 /********************* Typedefs and others *********************/
-typedef uint32_t myType;
+typedef uint64_t myType;
 typedef uint8_t smallType;
 typedef std::pair<myType, myType> RSSMyType;
 typedef std::pair<smallType, smallType> RSSSmallType;

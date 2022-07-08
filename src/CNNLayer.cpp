@@ -32,6 +32,25 @@ void CNNLayer::initialize()
 	size_t decimation = 10000;
 	size_t size = weights.size();
 	
+		float temp[size];
+	for (size_t i = 0; i < size; ++i){
+		temp[i] = (float)(rand() % (higher - lower) + lower)/decimation;
+		
+		if (partyNum == PARTY_A){
+			weights[i].first = floatToMyType(temp[i]);
+			weights[i].second = 0;
+		}
+		
+		if (partyNum == PARTY_B){
+			weights[i].first = 0;
+			weights[i].second = 0;
+		}
+		
+		if (partyNum == PARTY_C){
+			weights[i].first = 0;
+			weights[i].second = floatToMyType(temp[i]);
+		}
+	}	
 	fill(biases.begin(), biases.end(), make_pair(0,0));
 }
 
@@ -56,9 +75,9 @@ void CNNLayer::forward(const RSSVectorMyType& inputActivation)
 	size_t B 	= conf.batchSize;
 	size_t iw 	= conf.imageWidth;
 	size_t ih 	= conf.imageHeight;
-	size_t f 	= conf.filterSize;
-	size_t Din 	= conf.inputFeatures;
-	size_t Dout = conf.filters;
+	size_t f 	= conf.filterSize;//3*3 for 3 
+	size_t Din 	= conf.inputFeatures;//224 *224*3 this is for 3
+	size_t Dout = conf.filters;//out filters
 	size_t P 	= conf.padding;
 	size_t S 	= conf.stride;
 	size_t ow 	= (((iw-f+2*P)/S)+1);

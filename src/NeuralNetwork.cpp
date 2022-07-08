@@ -5,6 +5,7 @@
 #include "CNNLayer.h"
 #include "MaxpoolLayer.h"
 #include "ReLULayer.h"
+#include "AdaptAvgpoolLayer.h"
 #include "BNLayer.h"
 #include "NeuralNetwork.h"
 #include "Functionalities.h"
@@ -21,6 +22,7 @@ NeuralNetwork::NeuralNetwork(NeuralNetConfig* config)
 {
 	for (size_t i = 0; i < NUM_LAYERS; ++i)
 	{
+		cout<<"the "<<i<<"th layer"<<endl;
 		if (config->layerConf[i]->type.compare("FC") == 0) {
 			FCConfig *cfg = static_cast<FCConfig *>(config->layerConf[i]);
 			layers.push_back(new FCLayer(cfg, i));
@@ -41,6 +43,10 @@ NeuralNetwork::NeuralNetwork(NeuralNetConfig* config)
 			BNConfig *cfg = static_cast<BNConfig *>(config->layerConf[i]);
 			layers.push_back(new BNLayer(cfg, i));
 		}
+		else if (config->layerConf[i]->type.compare("AdaptAvgpool") == 0) {
+			AdaptAvgpoolLayerConfig *cfg = static_cast<AdaptAvgpoolLayerConfig *>(config->layerConf[i]);
+			layers.push_back(new AdaptAvgpoolLayer(cfg, i));
+		}
 		else
 			error("Only FC, CNN, ReLU, Maxpool, and BN layer types currently supported");
 	}
@@ -58,7 +64,6 @@ NeuralNetwork::~NeuralNetwork()
 void NeuralNetwork::forward()
 {
 	log_print("NN.forward");
-
 	layers[0]->forward(inputData);
 	if (LARGE_NETWORK)
 		cout << "Forward \t" << layers[0]->layerNum << " completed..." << endl;
@@ -67,7 +72,7 @@ void NeuralNetwork::forward()
 	// cout << "DEBUG: forward() at NeuralNetwork.cpp" << endl;
 	//print_vector(inputData, "FLOAT", "inputData:", 784);
 	//print_vector(outputData, "FLOAT", "outputData:", 784);
-	// print_vector(*((CNNLayer*)layers[0])->getWeights(), "FLOAT", "w0:", 20);
+	// print_vector(*((CNNLayer*)layers[0])->getWeights(), "FLOAT", "w0:", 10);
 	// print_vector((*layers[0]->getActivation()), "FLOAT", "a0:", 1000);
 
 	for (size_t i = 1; i < NUM_LAYERS; ++i)
@@ -88,7 +93,7 @@ void NeuralNetwork::forward()
 void NeuralNetwork::backward()
 {
 	log_print("NN.backward");
-	computeDelta();	
+	computeDelta();	//loss
 	updateEquations();
 }
 
@@ -191,11 +196,14 @@ void NeuralNetwork::getAccuracy(const RSSVectorMyType &maxIndex, vector<size_t> 
 	vector<smallType> prediction(rows*columns);
 	
 	// reconstruct ground truth from output data
-	funcReconstruct(outputData, groundTruth, rows*columns, "groundTruth", true);//secondary.cpp :599 shows why output is all 0s when test --ljf
-	print_vector(outputData, "FLOAT", "outputData:", rows*columns);
+	funcReconstruct(outputData, groundTruth, rows*columns, "groundTruth", false);//secondary.cpp :599 shows why output is all 0s when test --ljf
+	// print_vector(outputData, "FLOAT", "outputData:", rows*columns);
+	// print_vector(inputData, "FLOAT", "inputData:", rows*columns);
 	
 	// reconstruct prediction from neural network
+	//funcReconstruct((*(layers[NUM_LAYERS-1])->getActivation()), temp_max,  rows*columns,"output", true);
 	funcMaxpool((*(layers[NUM_LAYERS-1])->getActivation()), temp_max, temp_maxPrime, rows, columns);
+	print_vector((*(layers[NUM_LAYERS-1])->getActivation()), "FLOAT", "train last layer", 1280);
 	funcReconstructBit(temp_maxPrime, prediction, rows*columns, "prediction", true);
 	
 	for (int i = 0, index = 0; i < rows; ++i){
@@ -214,7 +222,7 @@ void NeuralNetwork::getAccuracy(const RSSVectorMyType &maxIndex, vector<size_t> 
 	}
 
 	cout << "Rolling accuracy: " << counter[0] << " out of " 
-		 << counter[1] << " (" << (counter[0]*100/counter[1]) << " %)" << endl;
+		 <<128<< " (" << (counter[0]*100/128) << " %)" << endl;
 }
 
 // original implmentation of NeuralNetwork::getAccuracy(.)

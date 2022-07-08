@@ -38,10 +38,13 @@ void funcSelectBitShares(const RSSVectorSmallType &a0, const RSSVectorSmallType 
 void funcRELUPrime(const RSSVectorMyType &a, RSSVectorSmallType &b, size_t size);
 void funcRELU(const RSSVectorMyType &a, RSSVectorSmallType &temp, RSSVectorMyType &b, size_t size);
 void funcPow(const RSSVectorMyType &b, vector<smallType> &alpha, size_t size);
+void funFasterDiv(const RSSVectorMyType &a, const RSSVectorMyType &b, RSSVectorMyType &quo_result, 
+							size_t size);
 void funcDivision(const RSSVectorMyType &a, const RSSVectorMyType &b, RSSVectorMyType &quotient, 
 							size_t size);
 void funcBatchNorm(const RSSVectorMyType &a, const RSSVectorMyType &b, RSSVectorMyType &quotient, 
 							size_t batchSize, size_t B);
+void funcAdaptAvgpool(RSSVectorMyType &a,RSSVectorMyType &avg, size_t rows, size_t columns);
 void funcMaxpool(RSSVectorMyType &a, RSSVectorMyType &max, RSSVectorSmallType &maxPrime, 
 				size_t rows, size_t columns);
 void aggregateCommunication();
@@ -59,6 +62,8 @@ void debugBN();
 void debugSSBits();
 void debugSS();
 void debugMaxpool();
+void debugAdaptAvgpool();
+void debugFasterDivision();
 
 
 //Test

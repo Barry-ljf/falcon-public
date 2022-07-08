@@ -61,6 +61,16 @@ void runTest(string str, string whichTest, string &network)
 			network = "Debug Maxpool";
 			debugMaxpool();
 		}
+		else if (whichTest.compare("AdaptAvgpool") == 0)
+		{
+			network = "Debug AdaptAvgpool";
+			debugAdaptAvgpool();
+		}
+		else if (whichTest.compare("FasterDivision") == 0)
+		{
+			network = "Debug FasterDivision";
+			debugFasterDivision();
+		}
 		else
 			assert(false && "Unknown debug mode selected");
 	}

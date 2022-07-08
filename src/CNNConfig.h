@@ -33,7 +33,7 @@ public:
 	 batchSize(_batchSize),
 	 LayerConfig("CNN")
 	{
-		assert((imageWidth - filterSize + 2*padding)%stride == 0 && "CNN parameter check failed");
-		assert((imageHeight - filterSize + 2*padding)%stride == 0 && "CNN parameter check failed");
+		// assert((imageWidth - filterSize + 2*padding)%stride == 0 && "CNN parameter check failed");
+		// assert((imageHeight - filterSize + 2*padding)%stride == 0 && "CNN parameter check failed");
 	};
 };

@@ -6,6 +6,7 @@
 #include "MaxpoolConfig.h"
 #include "ReLUConfig.h"
 #include "BNConfig.h"
+#include "AdaptAvgpoolLayerConfig.h"
 #include "globals.h"
 using namespace std;
 
@@ -32,6 +33,7 @@ public:
 		//Checks
 		// assert(layerConf.back()->type.compare("FC") == 0 && "Last layer has to be FC");
 		// assert(((FCConfig*)layerConf.back())->outputDim == LAST_LAYER_SIZE && "Last layer size does not match LAST_LAYER_SIZE");
+		cout<<"DIAMOND checkNetwork"<<endl;
 		assert(numIterations == NUM_ITERATIONS && "NUM_ITERATIONS has to be consistent with globals.h");
 		if (layerConf.front()->type.compare("FC") == 0)
 	    	assert(((FCConfig*)layerConf.front())->inputDim == INPUT_SIZE && "FC input error");
@@ -39,5 +41,7 @@ public:
 			assert((((CNNConfig*)layerConf.front())->imageHeight) *
 				  (((CNNConfig*)layerConf.front())->imageWidth) * 
 				  (((CNNConfig*)layerConf.front())->inputFeatures) == INPUT_SIZE && "CNN input error");
+		cout<<"DIAMOND checkNetwork finished"<<endl;
 	};
+		
 };
