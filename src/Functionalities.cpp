@@ -3,11 +3,15 @@
 #include "Functionalities.h"
 #include "Precompute.h"
 #include <thread>
+#include <cmath>
+#include <time.h>
 
 
 using namespace std;
 extern Precompute PrecomputeObject;
 extern string SECURITY_TYPE;
+extern clock_t tStart;
+
 
 /******************************** Functionalities 2PC ********************************/
 // Share Truncation, truncate shares of a by power (in place) (power is logarithmic)
@@ -1528,20 +1532,11 @@ void funcPow(const RSSVectorMyType &b, vector<smallType> &alpha, size_t size)
 void funFasterDiv(const RSSVectorMyType &a, const RSSVectorMyType &b, RSSVectorMyType &quo_result, 
 							size_t size)
 {
-	//remember that adjust the data type mytype to unit64 ,otherwise there can not express even 200...
-	log_print("funcDivision");
-	/* Compute MSB
-		this can realize the function of ComputeMSVB  ：funcRELUPrime();
-	 we should transfer some function like computeMSB: learn the first  SIGN  bit of the share number
-	SO, we can use Drelu to replace this function:
-	 a:              1  2 -1 -2 3 
-	 b:              0  0  1  1  0
-	*/
-	/* 
-	*/
+	log_print("funFasterDiv");
+
 	/*********** to determine sign of quotient*************/
     // this vector is for debugging
-	vector<smallType> reconst_temp(size);
+	//vector<smallType> reconst_temp(size);
 
 	//module1 :how to make constant to share form of falcon:*******************
 	//definite one  plain mytype
@@ -1550,10 +1545,6 @@ void funFasterDiv(const RSSVectorMyType &a, const RSSVectorMyType &b, RSSVectorM
 
 	//make it into plain  mytype vector forms:
 	vector<myType> pos_one(size,constposOne), neg_one(size,constnegOne);
-	print_myType(pos_one[0],"constposOne[0]","FLOAT");
-	//print_myType(pos_one[1],"constposOne[1]","FLOAT");
-	//print_myType(pos_one[2],"constposOne[2]","FLOAT");
-	//print_myType(pos_one[3],"constposOne[2]","FLOAT");???
 
 	//definite RSSVectorMyType to load constant into share forms
 	RSSVectorMyType posOne(size), negOne(size);
@@ -1561,123 +1552,85 @@ void funFasterDiv(const RSSVectorMyType &a, const RSSVectorMyType &b, RSSVectorM
 	//transform vector<myType> into RSSVectorMyType
 	funcGetShares(posOne,pos_one);
 	funcGetShares(negOne,neg_one);
-	//print_vector(negOne, "FLOAT","negOne",size);
-	//print_vector(posOne, "FLOAT","posOne",size);
-    // funcReconstructBit(negOne, reconst_temp, size, "neg_one ", true);
-	// funcReconstructBit(posOne, reconst_temp, size, "pos_one ", true);
 
 	//module2: to use reluprime to get MSB of a and b***********************
-	RSSVectorSmallType numerator_sign(size), denominator_sign(size);
-	funcRELUPrime(a,numerator_sign,size);
+	RSSVectorSmallType denominator_sign(size);
 	funcRELUPrime(b,denominator_sign,size);
-	// debug：here we use print_vector , it didn't work.for bits reconst we use funcReconstructBit
-	//print_vector(numerator_sign,"FLOAT","numerator_sign : ",numerator_sign.size());
-
 
 	//module3：compute the sign of qoutient and make the num and den positive *************
-	RSSVectorMyType numerator_a_sign(size), denominator_b_sign(size),numerator(size),denominator(size), qoutient(size);
-
-
-	//how to give a small type constant ,in fact bool is mean to 0 and 1 with out -1!!!!!!!!
+	RSSVectorMyType denominator_b_sign(size),denominator(size);
 	vector<smallType> pos_small_one(size, 1);
-	// vector<smallType> neg_small_one(size, -1);//it is not available.
 	RSSVectorSmallType constsmallposone(size);
 	funcGetShares(constsmallposone, pos_small_one);
-	//funcReconstructBit(constsmallposone, reconst_temp, size, "constsmallone ", true);
-
 
 	RSSVectorSmallType compute_temp(size);
 	RSSVectorMyType compute_temp_1(size);
 	RSSVectorMyType compute_temp_2(size);
-	subtractVectors<RSSSmallType>(constsmallposone, numerator_sign, compute_temp, size);
-	funcSelectShares(negOne,compute_temp,compute_temp_1,size);
-	funcSelectShares(posOne,numerator_sign,compute_temp_2,size);
-	addVectors(compute_temp_1,compute_temp_2,numerator_a_sign,size);
-	// funcReconstructBit(compute_temp, reconst_temp, size, "compute_temp ", true);
-	// print_vector(compute_temp_1, "FLOAT","compute_temp_1",size);
-	// print_vector(compute_temp_2, "FLOAT","compute_temp_2",size);
 
 /******this module has function of 1 of 2 selected*******/
 	subtractVectors<RSSSmallType>(constsmallposone, denominator_sign, compute_temp, size);
 	funcSelectShares(negOne,compute_temp,compute_temp_1,size);
 	funcSelectShares(posOne,denominator_sign,compute_temp_2,size);
 	addVectors(compute_temp_1,compute_temp_2,denominator_b_sign,size);
-	print_vector(numerator_a_sign, "FLOAT","numerator_a_sign",size);
-	print_vector(denominator_b_sign, "FLOAT","denominator_b_sign",size);
-
-
-	// funcSelectBitShares(posOne,negOne,numerator_sign,numerator_a_sign,size,numerator_a_sign.size(),0);
-	// funcSelectBitShares(posOne,negOne,denominator_sign,denominator_b_sign,size,denominator_b_sign.size(),0);
-	// funcReconstructBit(numerator_a_sign, reconst_temp, size, "numerator_a_sign ", true);
-	// funcReconstructBit(denominator_b_sign, reconst_temp, size, "denominator_b_sign ", true);
 	
-	numerator = a;
-	//print_vector(numerator, "FLOAT","numerator",size);
-	funcDotProduct(numerator_a_sign,a,numerator,size,true,FLOAT_PRECISION);
-	//print_vector(numerator_a_sign, "FLOAT","numerator_a_sign",size);
+	RSSVectorMyType numerator = a;//--ljf
 	funcDotProduct(denominator_b_sign,b,denominator,size,true,FLOAT_PRECISION);
-	print_vector(numerator, "FLOAT","numerator",size);
-	print_vector(denominator, "FLOAT","denominator",size);
-
-	//to get quotient_sign:
-	RSSVectorSmallType quotient_temp(size);
-		for (int i = 0; i < size; ++i)
-	{
-		quotient_temp[i].first  = numerator_sign[i].first ^ denominator_sign[i].first;
-		quotient_temp[i].second = numerator_sign[i].second ^ denominator_sign[i].second;
-	}
-	subtractVectors<RSSSmallType>(constsmallposone, quotient_temp, compute_temp, size);
-	//funcReconstructBit(compute_temp, reconst_temp, size, "compute_temp ", true);
-	funcSelectShares(negOne,compute_temp,compute_temp_1,size);
-	funcSelectShares(posOne,quotient_temp,compute_temp_2,size);
-	addVectors(compute_temp_1,compute_temp_2,qoutient,size);
-	print_vector(qoutient, "FLOAT","qoutient",size);
-
+	//there is the real division time:
+	// tStart = clock();//time 
 	/*********** to set  the  numbers and get the initial*************/
-const myType constant_lamda = floatToMyType(1);
-const myType constant_fixed_lamda = floatToMyType(0.0625);
-const myType constant_Two = floatToMyType(2);
-RSSVectorMyType lamda(size),fixed_lamda(size),lamda_update(size),shared_two(size),
-				shared_one(size),compare_two_result(size),den_temp(size),den_temp_update(size);
-RSSVectorSmallType choose_lamda(size);
-vector<myType> vector_constant_lamda(size,constant_lamda),vector_constant_fixed_lamda(size,constant_fixed_lamda),
-				vector_constant_Two(size,constant_Two );
-den_temp = denominator;
-//print_vector(den_temp, "FLOAT","den_temp for input",size);
-funcGetShares(lamda,vector_constant_lamda);
-funcGetShares(fixed_lamda,vector_constant_fixed_lamda);
-funcGetShares(shared_two,vector_constant_Two);
-funcGetShares(shared_one,vector_constant_lamda);
-print_vector(fixed_lamda,"FLOAT","********************start to iteration*********************\nfixed_lamda",size);
-for (size_t i = 0; i < 4 ; i++)
-{
-	subtractVectors<RSSMyType>(shared_two,den_temp,compare_two_result,size);
-	//print_vector(compare_two_result, "FLOAT","compare_two_result",size);
-	funcRELUPrime(compare_two_result,choose_lamda,size);
-	funcDotProduct(den_temp,fixed_lamda,den_temp_update,size,true,FLOAT_PRECISION);
-
-	//1 of 2 selected:only has to change the select bits and the two selected options
-	subtractVectors<RSSSmallType>(constsmallposone, choose_lamda, compute_temp, size);
-	funcSelectShares(den_temp_update,compute_temp,compute_temp_1,size);
-	funcSelectShares(den_temp,choose_lamda,compute_temp_2,size);
-	addVectors(compute_temp_1,compute_temp_2,den_temp,size);
-	// print_vector(den_temp, "FLOAT","den_temp",size);
-	// print_vector(den_temp_update, "FLOAT","den_temp_update",size);
-
-	funcDotProduct(lamda,fixed_lamda,lamda_update,size,true,FLOAT_PRECISION);
+	//const myType constant_lamda = floatToMyType(1);
+	myType constant_fixed_lamda = floatToMyType(0.0625);
+	size_t initial_looper = 0;
+	if(DIV_RANGE == SMALL){
+		constant_fixed_lamda = floatToMyType(0.00390625);//1/(1<<8)(0,512)
+		initial_looper = 1;
+	}
+	else if(DIV_RANGE == MEDIUM){
+		constant_fixed_lamda = floatToMyType(0.001953125);//1/(1<<9)(512,1024)
+		initial_looper = 1;
+	}
+	else if(DIV_RANGE == LARGE){
+		//there will have a problem is that 2043 will be 0 because it suffer 2043/1024/1024. 
+		constant_fixed_lamda = floatToMyType(0.0009765625);//1/(1<<10)(1024,2^51)
+		initial_looper = 5;
+	}else if(DIV_RANGE == NORMAL){
+		initial_looper = 4;
+	}
 
 
-	subtractVectors<RSSSmallType>(constsmallposone, choose_lamda, compute_temp, size);
-	funcSelectShares(lamda_update,compute_temp,compute_temp_1,size);
-	funcSelectShares(lamda,choose_lamda,compute_temp_2,size);
-	addVectors(compute_temp_1,compute_temp_2,lamda,size);
-	//funcReconstructBit(choose_lamda, reconst_temp, size, "choose_lamda ", true);
-	// print_vector(lamda, "FLOAT","lamda",size);
-	// print_vector(lamda_update, "FLOAT","lamda_update",size);
-	
-}
-	print_vector(lamda, "FLOAT","lamda",size);
+	const myType constant_Two = floatToMyType(2);
+	RSSVectorMyType lamda(size),fixed_lamda(size),lamda_update(size),shared_two(size),
+					shared_one(size),compare_two_result(size),den_temp(size),den_temp_update(size);
+	RSSVectorSmallType choose_lamda(size);
+	vector<myType> vector_constant_fixed_lamda(size,constant_fixed_lamda),vector_constant_Two(size,constant_Two );
+	den_temp = denominator;
+	lamda = posOne;
+	shared_one = posOne;
 
+	funcGetShares(fixed_lamda,vector_constant_fixed_lamda);
+	funcGetShares(shared_two,vector_constant_Two);
+
+
+	for (size_t i = 0; i < initial_looper; i++)
+		{
+			subtractVectors<RSSMyType>(shared_two,den_temp,compare_two_result,size);
+			funcRELUPrime(compare_two_result,choose_lamda,size);
+			funcDotProduct(den_temp,fixed_lamda,den_temp_update,size,true,FLOAT_PRECISION);
+
+			//1 of 2 selected:only has to change the select bits and the two selected options
+			subtractVectors<RSSSmallType>(constsmallposone, choose_lamda, compute_temp, size);
+			funcSelectShares(den_temp_update,compute_temp,compute_temp_1,size);
+			funcSelectShares(den_temp,choose_lamda,compute_temp_2,size);
+			addVectors(compute_temp_1,compute_temp_2,den_temp,size);
+
+			funcDotProduct(lamda,fixed_lamda,lamda_update,size,true,FLOAT_PRECISION);
+
+			subtractVectors<RSSSmallType>(constsmallposone, choose_lamda, compute_temp, size);
+			funcSelectShares(lamda_update,compute_temp,compute_temp_1,size);
+			funcSelectShares(lamda,choose_lamda,compute_temp_2,size);
+			addVectors(compute_temp_1,compute_temp_2,lamda,size);
+
+		}
 
 	/*********** to start the iteration*************/
 	RSSVectorMyType y(size),factor_m(size),numerator_temp(size),denominator_temp(size),result(size);
@@ -1687,24 +1640,17 @@ for (size_t i = 0; i < 4 ; i++)
 
 	subtractVectors<RSSMyType>(denominator,shared_one,y,size);
 	subtractVectors<RSSMyType>(shared_one,y,factor_m,size);
-	//print_vector(factor_m, "FLOAT","factor_m",size);
 
 	//print_vector(numerator, "FLOAT","numerator_out",size);
-	for (size_t i = 0; i < 4 ; i++)
-	{
-		//print_vector(numerator, "FLOAT","numerator",size);
-		funcDotProduct(factor_m,numerator,numerator_temp,size,true,FLOAT_PRECISION);
-		funcDotProduct(factor_m,denominator,denominator_temp,size,true,FLOAT_PRECISION);
-		numerator = numerator_temp;
-		denominator = denominator_temp;
-		subtractVectors<RSSMyType>(shared_two,denominator,factor_m,size);
-		//print_vector(denominator, "FLOAT","denominator",size);
-	}
-	funcDotProduct(numerator,lamda,result,size,true,FLOAT_PRECISION);
-	funcDotProduct(result,qoutient,quo_result,size,true,FLOAT_PRECISION);
-	print_vector(quo_result, "FLOAT","quo_result",size);
+	for (size_t i = 0; i < 10 ; i++)
+		{
+			funcDotProduct(factor_m,numerator,numerator,size,true,FLOAT_PRECISION);
+			funcDotProduct(factor_m,denominator,denominator,size,true,FLOAT_PRECISION);
+			subtractVectors<RSSMyType>(shared_two,denominator,factor_m,size);
 
-
+		}
+		funcDotProduct(numerator,lamda,result,size,true,FLOAT_PRECISION);
+		funcDotProduct(result,denominator_b_sign,quo_result,size,true,FLOAT_PRECISION);
 
 }//fasterdiv
 
@@ -1813,13 +1759,25 @@ void funcAdaptAvgpool(RSSVectorMyType &a,RSSVectorMyType &avg, size_t rows, size
 	{
 		for(size_t j =0; j < columns ; j ++)
 		{
-			temp_sum[i] = temp_sum[i]  + a[i * columns + j];
+			temp_sum[i] = temp_sum[i]  + a[i * columns + j];//compute every row number
 		}
 	}
-	funcTruncatePublic(temp_sum , columns, rows );
-		for(size_t i=0; i < rows ; i++)
-			avg[i] = temp_sum[i];
 
+	//method 1
+	print_vector(temp_sum,"FLOAT","temp_sum",rows);
+	funcTruncatePublic(temp_sum , columns, rows );
+	for(size_t i=0; i < rows ; i++)
+		avg[i] = temp_sum[i];
+
+	//method 2
+	// myType cols = floatToMyType(columns);
+	// vector<myType> divisor(rows,cols);
+	// RSSVectorMyType divided(rows);
+	// print_vector(temp_sum,"FLOAT","temp_sum",rows);
+	// funcGetShares(divided,divisor);
+	// //funFasterDiv(temp_sum, divided, avg, rows);
+	// //funcDivision(temp_sum, divided, avg, rows);
+	// funcReconstruct(avg, divisor, rows, "avg", true);
 }
 
 
@@ -2162,7 +2120,9 @@ void debugReLU()
 
 void debugFasterDivision()
 {
-	vector<myType> data_a = {floatToMyType(-200.0)}, data_b = {floatToMyType(25.0)};
+	// vector<myType> data_a = {floatToMyType(88.0)}, data_b = {floatToMyType(2000)};
+	vector<myType> data_a = {floatToMyType(8.0)}, data_b = {floatToMyType(600)};
+	// vector<myType> data_a = {floatToMyType(8.0)}, data_b = {floatToMyType(60)};
 	size_t size = data_a.size();
 	RSSVectorMyType a(size), b(size), quotient(size);
 	vector<myType> reconst(size);
@@ -2172,17 +2132,28 @@ void debugFasterDivision()
 	//Debug Fasterdivision --ljf
 	funFasterDiv(a, b, quotient, size);
 
+	#if (!LOG_DEBUG)
+	funcReconstruct(a, reconst, size, "a", true);
+	print_myType(reconst[2], "a[0]", "FLOAT");
+	funcReconstruct(b, reconst, size, "b", true);
+	print_myType(reconst[2], "b[0]", "FLOAT");
+	funcReconstruct(quotient, reconst, size, "Quot", true);
+	print_myType(reconst[0], "Quotient[0]", "FLOAT");
+#endif	
+
 }
 void debugDivision()//debug is not ok.
 {
-	vector<myType> data_a = {floatToMyType(2.0)}, data_b = {floatToMyType(8.0)};
+	vector<myType> data_a = {floatToMyType(88.0)}, data_b = {floatToMyType(2000)};
+	//vector<myType> data_a = {floatToMyType(8.0)}, data_b = {floatToMyType(250)};
+	// vector<myType> data_a = {floatToMyType(8.0)}, data_b = {floatToMyType(60)};
 	size_t size = data_a.size();
 	RSSVectorMyType a(size), b(size), quotient(size);
 	vector<myType> reconst(size);
 
 	funcGetShares(a, data_a);
 	funcGetShares(b, data_b);
-	//funcDivision(a, b, quotient, size);
+	funcDivision(a, b, quotient, size);
 
 
 #if (!LOG_DEBUG)
@@ -2278,17 +2249,25 @@ void debugAdaptAvgpool()
 	size_t rows = 5;
 	size_t columns = 3;
 	size_t size = rows*columns;
-	vector<myType> data = {1,2,3,
-						   3,1,2,
-						   1,5,3,
-						   5,1,6,
-						   6,3,9}, reconst(size);
+	// vector<myType> data = {100,2,3,
+	// 					   3,1,1,
+	// 					   1,5,3,
+	// 					   5,1,6,
+	// 					   6,3,9}, reconst(size);
+	vector<myType> data = {floatToMyType(-100.0),floatToMyType(2),floatToMyType(3),
+							floatToMyType(3),floatToMyType(1),floatToMyType(1), 
+							floatToMyType(1),floatToMyType(5),floatToMyType(3),
+							floatToMyType(5),floatToMyType(1),floatToMyType(6),
+							floatToMyType(6),floatToMyType(3),floatToMyType(9)},reconst(size);
 	RSSVectorMyType a(size), avg(rows);
 
 	funcGetShares(a, data);
 	funcAdaptAvgpool(a, avg,  rows, columns);
+	
 
 #if (!LOG_DEBUG)
+	print_vector(avg, "FLOAT", "avg:", rows);
+	print_vector(a, "FLOAT", "a:", size);
 	funcReconstruct(a, reconst, size, "a", true);
 	funcReconstruct(avg, reconst, rows, "avg", true);
 #endif	
@@ -2321,6 +2300,125 @@ void debugMaxpool()
 
 
 /******************************** Test ********************************/
+void testDivision(size_t iter){
+	size_t rows = 3;
+	size_t columns = 3;
+	size_t size = rows*columns;
+	vector<float> num = {2,20,200,
+						   20000,3,30,
+						   300,5,-5000};
+	// vector<float> num = {2,20,200,
+	// 					   0.2,3,30,
+	// 					   30,5,50};
+	vector<float> den = {16,32,64,
+						   100,20,40,
+						   200,5,5};
+	// vector<float> den = {8,3,6,
+	// 					1,20,40,
+	// 					2,50,5};
+	vector<float> den_1 = {516,532,564,
+						   512,600,800,
+						   600,520,-700};
+	vector<float> den_2 = {1516,1532,1564,
+						   1512,1600,1800,
+						   2000,-1800,10000};
+	vector<myType> data_num = {floatToMyType(2),floatToMyType(20),floatToMyType(200),
+							floatToMyType(20000),floatToMyType(3),floatToMyType(30), 
+							floatToMyType(300),floatToMyType(5),floatToMyType(-5000)},reconst1(size);
+	// vector<myType> data_num = {floatToMyType(2),floatToMyType(20),floatToMyType(200),
+	// 						floatToMyType(0.2),floatToMyType(3),floatToMyType(30), 
+	// 						floatToMyType(30),floatToMyType(5),floatToMyType(50)},reconst1(size);
+	// vector<myType> data_den = {floatToMyType(8),floatToMyType(3),floatToMyType(6),
+	// 						floatToMyType(1),floatToMyType(20),floatToMyType(40), 
+	// 						floatToMyType(2),floatToMyType(50),floatToMyType(5)},reconst2(size);
+	vector<myType> data_den = {floatToMyType(16),floatToMyType(32),floatToMyType(64),
+							floatToMyType(100),floatToMyType(20),floatToMyType(40), 
+							floatToMyType(200),floatToMyType(5),floatToMyType(5)},reconst2(size);
+	vector<myType> data_den_1 = {floatToMyType(516),floatToMyType(532),floatToMyType(564),
+							floatToMyType(512),floatToMyType(600),floatToMyType(800), 
+							floatToMyType(600),floatToMyType(520),floatToMyType(-700)},reconst3(size);
+	vector<myType> data_den_2 = {floatToMyType(1516),floatToMyType(1532),floatToMyType(1564),
+							floatToMyType(1512),floatToMyType(1600),floatToMyType(1800), 
+							floatToMyType(2000),floatToMyType(-1800),floatToMyType(10000)};
+
+	RSSVectorMyType a(size),b1(size),b2(size),b3(size);
+	RSSVectorMyType quotient1(size), quotient2(size), quotient3(size);
+	vector<float>	quo1(size), quo2(size), quo3(size);
+	funcGetShares(a, data_num);
+	funcGetShares(b1, data_den);
+	funcGetShares(b2, data_den_1);
+	funcGetShares(b3, data_den_2);
+	vector<float> plain_result_1(size),plain_result_2(size),plain_result_3(size);
+
+	for(size_t i = 0 ; i < size ; i++){
+		plain_result_1[i] =num[i] / den[i];
+		plain_result_2[i] =num[i] / den_1[i];
+		plain_result_3[i] =num[i] / den_2[i];
+	}
+
+	//transform cipher caculation
+	
+
+
+	funFasterDiv(a, b1, quotient1, size);
+	funFasterDiv(a, b2, quotient2, size);
+	funFasterDiv(a, b3, quotient3, size);
+	funcReconstruct(quotient1, reconst1, size, "quotient1", false);
+	funcReconstruct(quotient2, reconst2, size, "quotient2", false);
+	funcReconstruct(quotient3, reconst3, size, "quotient3", false);
+
+	float sum1,sum2,sum3,avg_relative_error;
+	sum1 = 0;
+	sum2 = 0;
+	sum3 = 0;
+	for(size_t i = 0 ; i < size ; i++){
+		quo1[i] = (static_cast<int64_t>(reconst1[i]))/(float)(1 << FLOAT_PRECISION);
+		quo2[i] = (static_cast<int64_t>(reconst2[i]))/(float)(1 << FLOAT_PRECISION);
+		quo3[i] = (static_cast<int64_t>(reconst3[i]))/(float)(1 << FLOAT_PRECISION);
+		sum1 += abs(quo1[i]-plain_result_1[i])/abs(plain_result_1[i]);
+		sum2 += abs(quo2[i]-plain_result_2[i])/abs(plain_result_2[i]);
+		sum3 += abs(quo3[i]-plain_result_3[i])/abs(plain_result_3[i]);
+	} 
+	cout<<"Fasterition division(SMALL)  avg relative error is:"<< sum1 / 9.0 << endl;
+	cout<<"Fasterition division(MEDIUM) avg relative error is:"<< sum2 / 9.0 << endl;
+	cout<<"Fasterition division(LARGE) avg relative error is:"<< sum3 / 9.0 << endl;
+
+	funcDivision(a, b1, quotient1, size);
+	funcDivision(a, b2, quotient2, size);
+	funcDivision(a, b3, quotient3, size);
+	funcReconstruct(quotient1, reconst1, size, "quotient1", false);
+	funcReconstruct(quotient2, reconst2, size, "quotient2", false);
+	funcReconstruct(quotient3, reconst3, size, "quotient3", false);
+	sum1 = 0;
+	sum2 = 0;
+	sum3 = 0;
+	for(size_t i = 0 ; i < size ; i++){
+		quo1[i] = (static_cast<int64_t>(reconst1[i]))/(float)(1 << FLOAT_PRECISION);
+		quo2[i] = (static_cast<int64_t>(reconst2[i]))/(float)(1 << FLOAT_PRECISION);
+		quo3[i] = (static_cast<int64_t>(reconst3[i]))/(float)(1 << FLOAT_PRECISION);
+		sum1 += abs(quo1[i]-plain_result_1[i])/abs(plain_result_1[i]);
+		sum2 += abs(quo2[i]-plain_result_2[i])/abs(plain_result_2[i]);
+		sum3 += abs(quo3[i]-plain_result_3[i])/abs(plain_result_3[i]);
+	}
+	cout<<"oridinary division(SMALL) avg relative error is:"<< sum1 / 9.0 << endl;
+	cout<<"oridinary division(MEDIUM) avg relative error is:"<< sum2 / 9.0 << endl;
+	cout<<"oridinary division(LARGE) avg relative error is:"<< sum3 / 9.0 << endl;
+
+    clock_t tStart_FasterDiv,tEnd_FasterDiv,tStart_OrgDiv,tEnd_OrgDiv;
+	tStart_FasterDiv = clock();
+	for(size_t i = 0; i < iter; i++){
+	funFasterDiv(a, b2, quotient2, size);
+	}
+	tEnd_FasterDiv = clock();
+	cout<<"Fasterition division(SMALL) computing time is:"<< (double)(tEnd_FasterDiv - tStart_FasterDiv)/CLOCKS_PER_SEC<< "sec." << endl;
+	tStart_OrgDiv = clock();
+	for(size_t i = 0; i < iter; i++){
+	funcDivision(a, b2, quotient2, size);
+	}
+	tEnd_OrgDiv = clock();
+	cout<<"oridinary division(SMALL) computing time is:"<< (double)(tEnd_OrgDiv - tStart_OrgDiv)/CLOCKS_PER_SEC << "sec."  << endl;
+
+	}
 
 void testMatMul(size_t rows, size_t common_dim, size_t columns, size_t iter)
 {
@@ -2423,3 +2521,191 @@ void testMaxpool(size_t ih, size_t iw, size_t Din, size_t f, size_t S, size_t B,
 		funcMaxpool(temp1, b, c, ow*oh*Din*B, f*f);
 	}
 }
+
+// void funFasterDiv(const RSSVectorMyType &a, const RSSVectorMyType &b, RSSVectorMyType &quo_result, 
+// 							size_t size)
+// {
+// 	//remember that adjust the data type mytype to unit64 ,otherwise there can not express even 200...
+// 	log_print("funFasterDiv");
+// 	/* Compute MSB
+// 		this can realize the function of ComputeMSVB  ：funcRELUPrime();
+// 	 we should transfer some function like computeMSB: learn the first  SIGN  bit of the share number
+// 	SO, we can use Drelu to replace this function:
+// 	 a:              1  2 -1 -2 3 
+// 	 b:              0  0  1  1  0
+// 	*/
+// 	/* 
+// 	*/
+// 	/*********** to determine sign of quotient*************/
+//     // this vector is for debugging
+// 	vector<smallType> reconst_temp(size);
+
+// 	//module1 :how to make constant to share form of falcon:*******************
+// 	//definite one  plain mytype
+// 	const myType constposOne = floatToMyType(1);
+// 	const myType constnegOne = floatToMyType(-1);
+
+// 	//make it into plain  mytype vector forms:
+// 	vector<myType> pos_one(size,constposOne), neg_one(size,constnegOne);
+// 	print_myType(pos_one[0],"constposOne[0]","FLOAT");
+// 	//print_myType(pos_one[1],"constposOne[1]","FLOAT");
+// 	//print_myType(pos_one[2],"constposOne[2]","FLOAT");
+// 	//print_myType(pos_one[3],"constposOne[2]","FLOAT");???
+
+// 	//definite RSSVectorMyType to load constant into share forms
+// 	RSSVectorMyType posOne(size), negOne(size);
+
+// 	//transform vector<myType> into RSSVectorMyType
+// 	funcGetShares(posOne,pos_one);
+// 	funcGetShares(negOne,neg_one);
+// 	//print_vector(negOne, "FLOAT","negOne",size);
+// 	//print_vector(posOne, "FLOAT","posOne",size);
+//     // funcReconstructBit(negOne, reconst_temp, size, "neg_one ", true);
+// 	// funcReconstructBit(posOne, reconst_temp, size, "pos_one ", true);
+
+// 	//module2: to use reluprime to get MSB of a and b***********************
+// 	//RSSVectorSmallType numerator_sign(size);//--ljf
+// 	RSSVectorSmallType denominator_sign(size);
+// 	//funcRELUPrime(a,numerator_sign,size);//--ljf
+// 	funcRELUPrime(b,denominator_sign,size);
+// 	// debug：here we use print_vector , it didn't work.for bits reconst we use funcReconstructBit
+// 	//print_vector(numerator_sign,"FLOAT","numerator_sign : ",numerator_sign.size());
+
+
+// 	//module3：compute the sign of qoutient and make the num and den positive *************
+// 	RSSVectorMyType denominator_b_sign(size),denominator(size), qoutient(size);
+// 	//RSSVectorMyType numerator_a_sign(size),numerator(size);//--ljf
+
+// 	//how to give a small type constant ,in fact bool is mean to 0 and 1 with out -1!!!!!!!!
+// 	vector<smallType> pos_small_one(size, 1);
+// 	// vector<smallType> neg_small_one(size, -1);//it is not available.
+// 	RSSVectorSmallType constsmallposone(size);
+// 	funcGetShares(constsmallposone, pos_small_one);
+// 	//funcReconstructBit(constsmallposone, reconst_temp, size, "constsmallone ", true);
+
+
+// 	RSSVectorSmallType compute_temp(size);
+// 	RSSVectorMyType compute_temp_1(size);
+// 	RSSVectorMyType compute_temp_2(size);
+// 	// subtractVectors<RSSSmallType>(constsmallposone, numerator_sign, compute_temp, size);//--ljf
+// 	// funcSelectShares(negOne,compute_temp,compute_temp_1,size);
+// 	// funcSelectShares(posOne,numerator_sign,compute_temp_2,size);
+// 	// addVectors(compute_temp_1,compute_temp_2,numerator_a_sign,size);
+
+// 	// funcReconstructBit(compute_temp, reconst_temp, size, "compute_temp ", true);
+// 	// print_vector(compute_temp_1, "FLOAT","compute_temp_1",size);
+// 	// print_vector(compute_temp_2, "FLOAT","compute_temp_2",size);
+
+// /******this module has function of 1 of 2 selected*******/
+// 	subtractVectors<RSSSmallType>(constsmallposone, denominator_sign, compute_temp, size);
+// 	funcSelectShares(negOne,compute_temp,compute_temp_1,size);
+// 	funcSelectShares(posOne,denominator_sign,compute_temp_2,size);
+// 	addVectors(compute_temp_1,compute_temp_2,denominator_b_sign,size);
+// 	//print_vector(numerator_a_sign, "FLOAT","numerator_a_sign",size);
+// 	print_vector(denominator_b_sign, "FLOAT","denominator_b_sign",size);
+
+
+// 	// funcSelectBitShares(posOne,negOne,numerator_sign,numerator_a_sign,size,numerator_a_sign.size(),0);
+// 	// funcSelectBitShares(posOne,negOne,denominator_sign,denominator_b_sign,size,denominator_b_sign.size(),0);
+// 	// funcReconstructBit(numerator_a_sign, reconst_temp, size, "numerator_a_sign ", true);
+// 	// funcReconstructBit(denominator_b_sign, reconst_temp, size, "denominator_b_sign ", true);
+	
+// 	RSSVectorMyType numerator = a;//--ljf
+// 	//print_vector(numerator, "FLOAT","numerator",size);
+// 	//funcDotProduct(numerator_a_sign,a,numerator,size,true,FLOAT_PRECISION);//--ljf
+// 	//print_vector(numerator_a_sign, "FLOAT","numerator_a_sign",size);
+// 	funcDotProduct(denominator_b_sign,b,denominator,size,true,FLOAT_PRECISION);
+// 	//print_vector(numerator, "FLOAT","numerator",size);
+// 	print_vector(denominator, "FLOAT","denominator",size);
+
+// 	//to get quotient_sign://--ljf
+// 	// RSSVectorSmallType quotient_temp(size);
+// 	// 	for (int i = 0; i < size; ++i)
+// 	// {
+// 	// 	quotient_temp[i].first  = numerator_sign[i].first ^ denominator_sign[i].first;
+// 	// 	quotient_temp[i].second = numerator_sign[i].second ^ denominator_sign[i].second;
+// 	// }
+// 	// subtractVectors<RSSSmallType>(constsmallposone, quotient_temp, compute_temp, size);
+// 	// //funcReconstructBit(compute_temp, reconst_temp, size, "compute_temp ", true);
+// 	// funcSelectShares(negOne,compute_temp,compute_temp_1,size);
+// 	// funcSelectShares(posOne,quotient_temp,compute_temp_2,size);
+// 	// addVectors(compute_temp_1,compute_temp_2,qoutient,size);
+// 	// print_vector(qoutient, "FLOAT","qoutient",size);
+
+
+// 	//there is the real division time:
+// 	//tStart = clock();//time cheated
+// 	/*********** to set  the  numbers and get the initial*************/
+// const myType constant_lamda = floatToMyType(1);
+// const myType constant_fixed_lamda = floatToMyType(0.0625);
+// const myType constant_Two = floatToMyType(2);
+// RSSVectorMyType lamda(size),fixed_lamda(size),lamda_update(size),shared_two(size),
+// 				shared_one(size),compare_two_result(size),den_temp(size),den_temp_update(size);
+// RSSVectorSmallType choose_lamda(size);
+// vector<myType> vector_constant_lamda(size,constant_lamda),vector_constant_fixed_lamda(size,constant_fixed_lamda),
+// 				vector_constant_Two(size,constant_Two );
+// den_temp = denominator;
+// //print_vector(den_temp, "FLOAT","den_temp for input",size);
+// funcGetShares(lamda,vector_constant_lamda);
+// funcGetShares(fixed_lamda,vector_constant_fixed_lamda);
+// funcGetShares(shared_two,vector_constant_Two);
+// funcGetShares(shared_one,vector_constant_lamda);
+// print_vector(fixed_lamda,"FLOAT","********************start to iteration*********************\nfixed_lamda",size);
+// for (size_t i = 0; i < 4 ; i++)
+// {
+// 	subtractVectors<RSSMyType>(shared_two,den_temp,compare_two_result,size);
+// 	//print_vector(compare_two_result, "FLOAT","compare_two_result",size);
+// 	funcRELUPrime(compare_two_result,choose_lamda,size);
+// 	funcDotProduct(den_temp,fixed_lamda,den_temp_update,size,true,FLOAT_PRECISION);
+
+// 	//1 of 2 selected:only has to change the select bits and the two selected options
+// 	subtractVectors<RSSSmallType>(constsmallposone, choose_lamda, compute_temp, size);
+// 	funcSelectShares(den_temp_update,compute_temp,compute_temp_1,size);
+// 	funcSelectShares(den_temp,choose_lamda,compute_temp_2,size);
+// 	addVectors(compute_temp_1,compute_temp_2,den_temp,size);
+// 	// print_vector(den_temp, "FLOAT","den_temp",size);
+// 	// print_vector(den_temp_update, "FLOAT","den_temp_update",size);
+
+// 	funcDotProduct(lamda,fixed_lamda,lamda_update,size,true,FLOAT_PRECISION);
+
+
+// 	subtractVectors<RSSSmallType>(constsmallposone, choose_lamda, compute_temp, size);
+// 	funcSelectShares(lamda_update,compute_temp,compute_temp_1,size);
+// 	funcSelectShares(lamda,choose_lamda,compute_temp_2,size);
+// 	addVectors(compute_temp_1,compute_temp_2,lamda,size);
+// 	//funcReconstructBit(choose_lamda, reconst_temp, size, "choose_lamda ", true);
+// 	// print_vector(lamda, "FLOAT","lamda",size);
+// 	// print_vector(lamda_update, "FLOAT","lamda_update",size);
+	
+// }
+// 	print_vector(lamda, "FLOAT","lamda",size);
+
+
+// 	/*********** to start the iteration*************/
+// 	RSSVectorMyType y(size),factor_m(size),numerator_temp(size),denominator_temp(size),result(size);
+// 	//use lamda gotten from last module
+// 	funcDotProduct(lamda,denominator,denominator_temp,size,true,FLOAT_PRECISION);
+// 	denominator = denominator_temp;
+
+// 	subtractVectors<RSSMyType>(denominator,shared_one,y,size);
+// 	subtractVectors<RSSMyType>(shared_one,y,factor_m,size);
+// 	//print_vector(factor_m, "FLOAT","factor_m",size);
+
+// 	//print_vector(numerator, "FLOAT","numerator_out",size);
+// 	for (size_t i = 0; i < 4 ; i++)
+// 	{
+// 		//print_vector(numerator, "FLOAT","numerator",size);
+// 		funcDotProduct(factor_m,numerator,numerator,size,true,FLOAT_PRECISION);
+// 		funcDotProduct(factor_m,denominator,denominator,size,true,FLOAT_PRECISION);
+// 		//numerator = numerator_temp;
+// 		//denominator = denominator_temp;//don't to have re pass the value.
+// 		subtractVectors<RSSMyType>(shared_two,denominator,factor_m,size);
+// 		//print_vector(denominator, "FLOAT","denominator",size);
+// 	}
+// 	funcDotProduct(numerator,lamda,result,size,true,FLOAT_PRECISION);
+// 	funcDotProduct(result,denominator_b_sign,quo_result,size,true,FLOAT_PRECISION);
+// 	print_vector(quo_result, "FLOAT","quo_result",size);
+
+
+
+// }//fasterdiv

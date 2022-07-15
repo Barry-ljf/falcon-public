@@ -24,9 +24,13 @@
 #define RANDOM_COMPUTE 256	//Size of buffer for random elements
 #define STRING_BUFFER_SIZE 256
 #define PARALLEL true
-#define NO_CORES 8
+#define NO_CORES 10
 
-
+/********************* Division range *************************/
+#define SMALL 0
+#define MEDIUM 1
+#define LARGE 2
+#define NORMAL 3
 
 /********************* MPC globals *********************/
 #define NUM_OF_PARTIES 3
@@ -47,6 +51,7 @@
 #define LEARNING_RATE (1 << (FLOAT_PRECISION - LOG_LEARNING_RATE))
 #define NO_OF_EPOCHS 1.5
 #define NUM_ITERATIONS 1
+#define DIV_RANGE NORMAL
 // #define NUM_ITERATIONS ((int) (NO_OF_EPOCHS * TRAINING_DATA_SIZE/MINI_BATCH_SIZE))
 
 
@@ -63,5 +68,6 @@ const int BIT_SIZE = (sizeof(myType) * CHAR_BIT);
 const myType LARGEST_NEG = ((myType)1 << (BIT_SIZE - 1));
 const myType MINUS_ONE = (myType)-1;
 const smallType BOUNDARY = (256/PRIME_NUMBER) * PRIME_NUMBER;
+
 
 #endif

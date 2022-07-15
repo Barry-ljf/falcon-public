@@ -151,6 +151,11 @@ void runTest(string str, string whichTest, string &network)
 			network = "Test Maxpool3";
 			testMaxpool(8, 8, 50, 4, 4, MINI_BATCH_SIZE, NUM_ITERATIONS);
 		}
+		else if (whichTest.compare("Division") == 0)
+		{
+			network = "Test Division";
+			testDivision(20);
+		}
 		else
 			assert(false && "Unknown test mode selected");
 	}

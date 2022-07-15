@@ -34,8 +34,8 @@ int main(int argc, char** argv)
 	{network = argv[6]; dataset = argv[7]; security = argv[8];}
 	else
 	{
-		network = "LeNet";
-		dataset = "MNIST";
+		network = "AlexNet";
+		dataset = "DIAMOND";
 		security = "Semi-honest";
 	}
 	selectNetwork(network, dataset, security, config);
@@ -79,12 +79,12 @@ int main(int argc, char** argv)
 	// network += " preloaded"; PRELOADING = true;
 	// preload_network(PRELOADING, network, net);
 
-	// start_m();
+	start_m();
 	//Run unit tests in two modes: 
 	//	1. Debug {Mat-Mul, DotProd, PC, Wrap, ReLUPrime, ReLU,FasterDivision, Division, BN, SSBits, SS, AdaptAvgpool and Maxpool}
-	//	2. Test {Mat-Mul1, Mat-Mul2, Mat-Mul3 (and similarly) Conv*, ReLU*, ReLUPrime*, and Maxpool*} where * = {1,2,3}
+	//	2. Test {Division,Mat-Mul1, Mat-Mul2, Mat-Mul3 (and similarly) Conv*, ReLU*, ReLUPrime*, and Maxpool*} where * = {1,2,3}
 	runTest("Debug", "FasterDivision", network);
-	//runTest("Test", "Maxpool1", network);
+	//runTest("Test", "Division", network);
 
 	// Run forward/backward for single layers
 	//  1. what {F, D, U}
@@ -101,19 +101,19 @@ int main(int argc, char** argv)
 	// network += " test";
 	// test(PRELOADING, network, net);
 
-		// end_m(network);
-		// cout << "----------------------------------------------" << endl;  	
-		// cout << "Run details: " << NUM_OF_PARTIES << "PC (P" << partyNum 
-		// 	 << "), " << NUM_ITERATIONS << " iterations, batch size " << MINI_BATCH_SIZE << endl 
-		// 	 << "Running " << security << " " << network << " on " << dataset << " dataset" << endl;
-		// cout << "----------------------------------------------" << endl << endl;  
+	end_m(network);
+	// cout << "----------------------------------------------" << endl;  	
+	// cout << "Run details: " << NUM_OF_PARTIES << "PC (P" << partyNum 
+	// 		<< "), " << NUM_ITERATIONS << " iterations, batch size " << MINI_BATCH_SIZE << endl 
+	// 		<< "Running " << security << " " << network << " on " << dataset << " dataset" << endl;
+	// cout << "----------------------------------------------" << endl << endl;  
 
-		//printNetwork(net);
+	// printNetwork(net);
 
 /****************************** CLEAN-UP ******************************/ 
-	delete aes_indep;
-	delete aes_next;
-	delete aes_prev;
+	// delete aes_indep;
+	// delete aes_next;
+	// delete aes_prev;
 	delete net;
 	delete config;
 	

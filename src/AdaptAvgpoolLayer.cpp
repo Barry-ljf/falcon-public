@@ -43,7 +43,7 @@ void AdaptAvgpoolLayer::forward(const RSSVectorMyType& inputActivation)
 	size_t f 	= conf.poolSize;
 	size_t Din 	= conf.features;
 	size_t S 	= conf.stride;
-	size_t ow 	=1;
+	size_t ow 	= 1;
 	size_t oh	= 1;
 
 	RSSVectorMyType temp1(ow*oh*Din*B*f*f);

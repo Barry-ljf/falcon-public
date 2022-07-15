@@ -23,7 +23,7 @@ public:
 	 batchSize(_batchSize),
 	 LayerConfig("AdaptAvgpool")
 	{
-		// assert((imageWidth - poolSize)%stride == 0 && "Maxpool layer parameters incorrect");
-		// assert((imageHeight - poolSize)%stride == 0 && "Maxpool layer parameters incorrect");
+		assert((imageWidth - poolSize)%stride == 0 && "Maxpool layer parameters incorrect");
+		assert((imageHeight - poolSize)%stride == 0 && "Maxpool layer parameters incorrect");
 	};
 };
